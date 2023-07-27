@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:mobilicis_assignment/const_colors.dart';
 import 'package:mobilicis_assignment/data/objects/listing_object.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-// import 'package:fast_cached_network_image/fast_cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 class ListingTile extends StatelessWidget {
   const ListingTile({super.key, required this.listing});
@@ -39,7 +40,12 @@ class ListingTile extends StatelessWidget {
                         width: 120,
                         fit: BoxFit.contain,
                         imageUrl: listing.defaultImage.fullImage,
-                        placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                        placeholder: (context, url) => Shimmer(
+                          gradient: const LinearGradient(colors: [Colors.grey, Colors.white]),
+                          child: Container(
+                              decoration:
+                                  BoxDecoration(borderRadius: BorderRadius.circular(5), color: backgroundColor)),
+                        ),
                         errorWidget: (context, url, error) => const Icon(Icons.broken_image),
                       ),
                     ),

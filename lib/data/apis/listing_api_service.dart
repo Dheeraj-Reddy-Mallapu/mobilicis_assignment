@@ -9,13 +9,11 @@ class ListingApiService {
     final Uri uri = Uri.parse('$baseUrl?page=$page&limit=$limit');
 
     final response = await http.get(uri);
-
+    print('response${response.statusCode}');
     if (response.statusCode == 200) {
       return listingsFromJson(response.body);
-      // final List<dynamic> responseData = json.decode(response.body);
-      // return responseData.map((json) => Listing.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to load products');
+      throw Exception('Failed to load listings');
     }
   }
 }
