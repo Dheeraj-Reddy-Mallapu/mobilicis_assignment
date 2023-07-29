@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:mobilicis_assignment/const_colors.dart';
+import 'package:mobilicis_assignment/data/apis/filters_api_service.dart';
 import 'package:mobilicis_assignment/data/apis/listing_api_service.dart';
+import 'package:mobilicis_assignment/data/objects/filter_object.dart';
 import 'package:mobilicis_assignment/data/objects/listing_object.dart';
+import 'package:mobilicis_assignment/notification_service.dart';
+import 'package:mobilicis_assignment/screens/home%20screen/widgets/filters_sheet.dart';
 import 'package:mobilicis_assignment/screens/home%20screen/widgets/listing_tile.dart';
+import 'package:mobilicis_assignment/screens/notifications_screen.dart';
 import 'package:mobilicis_assignment/screens/search_screen.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,23 +23,28 @@ class HomeScreen extends StatefulWidget {
 
 class HomeScreenState extends State<HomeScreen> {
   final ListingApiService _listingApiService = ListingApiService();
+  final FiltersApiService _filterApiService = FiltersApiService();
+
   final int _itemsPerPage = 10;
   int _currentPage = 1;
+
   final List<Listing> _listings = [];
+  late Filters _filters;
 
   bool _isLoading = true;
 
   final ScrollController _scrollController = ScrollController();
+  final PageController _bannerScrollController = PageController();
 
   Future<void> _loadNextPage() async {
     setState(() {
       _currentPage++;
     });
 
-    await _loadData();
+    await _loadListings();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadListings() async {
     try {
       final listings = await _listingApiService.fetchListings(_currentPage, _itemsPerPage);
 
@@ -45,10 +57,24 @@ class HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _loadFilters() async {
+    try {
+      final filter = await _filterApiService.fetchFilter(false);
+      _filters = filter.filters;
+    } catch (e) {
+      Get.snackbar('Oops!', e.toString());
+    }
+  }
+
+  //// notification service
+  final _messagingService = MessagingService();
+
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _messagingService.init(context);
+    _loadFilters();
+    _loadListings();
 
     _scrollController.addListener(() {
       if (_scrollController.position.atEdge && _scrollController.position.pixels != 0) {
@@ -66,9 +92,14 @@ class HomeScreenState extends State<HomeScreen> {
         toolbarHeight: 40,
         backgroundColor: primaryColor,
         leading: IconButton(
-          onPressed: () => Scaffold.of(context).openDrawer(),
+          onPressed: () {}, // Scaffold.of(context).openDrawer(),
           icon: Image.asset('assets/menu.png'),
         ),
+        actions: [
+          IconButton(
+              onPressed: () => Get.to(() => const NotificationsScreen()),
+              icon: const Icon(Icons.notifications_outlined, color: Colors.white)),
+        ],
         title: Image.asset('assets/logo.png', height: 28),
         bottom: AppBar(
           toolbarHeight: 40,
@@ -95,31 +126,182 @@ class HomeScreenState extends State<HomeScreen> {
         ),
       ),
       body: SingleChildScrollView(
+        controller: _scrollController,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Buy Top Brands'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text(
+                'Buy Top Brands',
+                style: TextStyle(color: Colors.grey.shade700),
+              ),
+            ),
             SizedBox(
-              height: 100,
+              height: 70,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 // shrinkWrap: true,
                 itemCount: 5,
                 itemBuilder: (context, index) {
                   return Padding(
-                    padding: const EdgeInsets.all(8.0),
+                    padding: const EdgeInsets.all(6.0),
                     child: Container(
-                      height: 90,
-                      width: 135,
-                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(5), color: Colors.white),
+                      width: 75,
+                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: Colors.white),
                       child: Image.asset('assets/brand${index + 1}.png'),
                     ),
                   );
                 },
               ),
             ),
-            const Text('Shop By'),
-            const Text('Best Deals Near You'),
+            SizedBox(
+              height: 200,
+              child: PageView.builder(
+                controller: _bannerScrollController,
+                scrollDirection: Axis.horizontal,
+                // shrinkWrap: true,
+                itemCount: 3,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return Stack(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(5), color: Colors.white),
+                          child: Image.asset('assets/banner1.jpg', fit: BoxFit.fill),
+                        ),
+                        Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(5),
+                                child: Image.asset(
+                                  'assets/sell.png',
+                                  fit: BoxFit.fill,
+                                  height: 80,
+                                  width: 160,
+                                ),
+                              ),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(5),
+                                child: Image.asset(
+                                  'assets/buy.png',
+                                  fit: BoxFit.fill,
+                                  height: 80,
+                                  width: 160,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  } else {
+                    return Container(
+                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(5), color: Colors.white),
+                      child: Image.asset(
+                        'assets/banner${index + 1}.jpg',
+                        fit: BoxFit.fill,
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Center(
+                child: SmoothPageIndicator(
+                    controller: _bannerScrollController,
+                    count: 3,
+                    effect: ExpandingDotsEffect(
+                      dotHeight: 8,
+                      dotWidth: 8,
+                      activeDotColor: primaryColor,
+                      dotColor: Colors.grey.shade600,
+                      radius: 2,
+                    )),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text(
+                'Shop By',
+                style: TextStyle(color: Colors.grey.shade700),
+              ),
+            ),
+            SizedBox(
+              height: 110,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                // shrinkWrap: true,
+                itemCount: 4,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.all(6.0),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 75,
+                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: Colors.white),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: SvgPicture.asset('assets/shopBy${index + 1}.svg', height: 40),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                            width: 60,
+                            child: Text(
+                              shopBy[index],
+                              style: const TextStyle(fontSize: 10),
+                              maxLines: 2,
+                              textAlign: TextAlign.center,
+                            ))
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Best Deals Near You',
+                        style: TextStyle(color: Colors.grey.shade700),
+                      ),
+                      TextButton(
+                        onPressed: () {},
+                        child: Text(
+                          _location,
+                          style: const TextStyle(
+                              color: Color.fromARGB(255, 251, 212, 36),
+                              decoration: TextDecoration.underline,
+                              decorationColor: Color.fromARGB(255, 251, 212, 36)),
+                        ),
+                      )
+                    ],
+                  ),
+                  TextButton(
+                      onPressed: () {
+                        showModalBottomSheet(
+                          isScrollControlled: true,
+                          context: context,
+                          builder: (context) => FiltersSheet(filters: _filters),
+                        );
+                        // Get.bottomSheet(const FiltersSheet(), backgroundColor: Colors.white);
+                      },
+                      child: const Text('Filter ⇅', style: TextStyle(color: Colors.black)))
+                ],
+              ),
+            ),
             !_isLoading
                 ? GridView.builder(
                     gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -129,7 +311,6 @@ class HomeScreenState extends State<HomeScreen> {
                     ),
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    controller: _scrollController,
                     itemCount: _listings.length,
                     itemBuilder: (context, index) {
                       final listing = _listings[index];
@@ -190,4 +371,7 @@ class HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  final String _location = 'India';
+  List<String> shopBy = ['Bestselling Mobiles', 'Verified Devices Only', 'Like New Condition', 'Phones With Warranty'];
 }

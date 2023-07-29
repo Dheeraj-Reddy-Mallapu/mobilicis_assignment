@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:mobilicis_assignment/data/apis/search_api_service.dart';
 import 'package:mobilicis_assignment/data/objects/search_object.dart';
 
 import '../const_colors.dart';
+import 'notifications_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -39,9 +41,14 @@ class _SearchScreenState extends State<SearchScreen> {
         toolbarHeight: 40,
         backgroundColor: primaryColor,
         leading: IconButton(
-          onPressed: () => Scaffold.of(context).openDrawer(),
+          onPressed: () {}, //Scaffold.of(context).openDrawer()
           icon: Image.asset('assets/menu.png'),
         ),
+        actions: [
+          IconButton(
+              onPressed: () => Get.to(() => const NotificationsScreen()),
+              icon: const Icon(Icons.notifications_outlined, color: Colors.white)),
+        ],
         title: Image.asset('assets/logo.png', height: 28),
         bottom: PreferredSize(
           preferredSize: const Size(double.infinity, 40),

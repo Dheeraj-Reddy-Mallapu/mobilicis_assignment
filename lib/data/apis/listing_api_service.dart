@@ -9,7 +9,7 @@ class ListingApiService {
     final Uri uri = Uri.parse('$baseUrl?page=$page&limit=$limit');
 
     final response = await http.get(uri);
-    print('response${response.statusCode}');
+
     if (response.statusCode == 200) {
       return listingsFromJson(response.body);
     } else {
