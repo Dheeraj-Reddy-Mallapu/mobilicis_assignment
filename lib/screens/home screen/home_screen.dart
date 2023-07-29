@@ -96,6 +96,15 @@ class HomeScreenState extends State<HomeScreen> {
           icon: Image.asset('assets/menu.png'),
         ),
         actions: [
+          GestureDetector(
+            child: Row(
+              children: [
+                Text(_location, style: const TextStyle(color: Colors.white)),
+                const Icon(Icons.place, color: Colors.white),
+              ],
+            ),
+            onTap: () {},
+          ),
           IconButton(
               onPressed: () => Get.to(() => const NotificationsScreen()),
               icon: const Icon(Icons.notifications_outlined, color: Colors.white)),
